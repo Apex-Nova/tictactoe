@@ -86,18 +86,25 @@ export function SuperGameScreen() {
       : preset.drawnBoardBehavior.type
     : preset.drawnBoardBehavior.type;
 
+  // In a connected multiplayer match, each device may only act for its own seat
+  // (host = X, guest = O) — this blocks one device from playing both sides.
+  const isMultiplayer = mp.status === 'connected';
+  const localPlayer = mp.role === 'guest' ? 'O' : 'X';
+
   function handleCellPlay(boardIndex: BoardIndex, cellIndex: number) {
     if (session.isProcessing || session.isAIThinking) return;
+    if (isMultiplayer && superState!.currentPlayer !== localPlayer) return;
     const move = { boardIndex, cellIndex: cellIndex as any };
     makeSuperMove(move);
-    if (mp.status === 'connected') {
+    if (isMultiplayer) {
       mp.sendMove({ type: 'super-move', move });
     }
   }
 
   function handleBoardSelect(boardIndex: BoardIndex) {
+    if (isMultiplayer && superState!.redirectingPlayer !== localPlayer) return;
     chooseControlBoard(boardIndex);
-    if (mp.status === 'connected') {
+    if (isMultiplayer) {
       mp.sendMove({ type: 'control-board-choice', boardIndex });
     }
   }
