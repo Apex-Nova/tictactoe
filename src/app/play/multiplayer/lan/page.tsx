@@ -45,7 +45,8 @@ export default function LanPage() {
     if (mp.status === 'connected' && (step === 'host-waiting' || step === 'connecting')) {
       router.push('/game/super');
     }
-    if (mp.status === 'error' && step !== 'error') setStep('error');
+    // Only show error if we actually started something (not on initial load with stale state)
+    if (mp.status === 'error' && step !== 'error' && step !== 'choose-side') setStep('error');
   }, [mp.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const siteBase = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://tictactoe-three-sigma.vercel.app';
