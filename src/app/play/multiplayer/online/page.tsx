@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMultiplayer } from '@/contexts/MultiplayerContext';
@@ -25,6 +25,7 @@ export default function OnlinePage() {
   const [preset, setPreset]   = useState<RulePreset>(ALL_PRESETS[0]);
   const [playerName, setPlayerName] = useState('');
   const [copied, setCopied]   = useState(false);
+  const hostConfigRef = useRef<Parameters<typeof startGame>[0] | null>(null);
 
   // Reset stale connection state on mount
   useEffect(() => { mp.disconnect(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -32,10 +33,13 @@ export default function OnlinePage() {
   const joinUrl = `${BASE_URL}/join?code=${code}`;
 
   // When peer connects (host side) → go to game
-  if (mp.status === 'connected' && step !== 'connecting') {
-    setStep('connecting');
-    router.push('/game/super');
-  }
+  useEffect(() => {
+    if (mp.status === 'connected' && step !== 'connecting') {
+      if (hostConfigRef.current) startGame(hostConfigRef.current);
+      setStep('connecting');
+      router.push('/game/super');
+    }
+  }, [mp.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleHostStart() {
     try {
@@ -48,6 +52,7 @@ export default function OnlinePage() {
           { player: 'O' as const, displayName: 'Opponent', controlType: 'remote' as const },
         ] as [PlayerConfig, PlayerConfig],
       };
+      hostConfigRef.current = config;
       const roomCode = await mp.createSocketRoom(config);
       setCode(roomCode);
       setStep('host-waiting');

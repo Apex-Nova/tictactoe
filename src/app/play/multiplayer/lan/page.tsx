@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMultiplayer } from '@/contexts/MultiplayerContext';
@@ -25,6 +25,7 @@ export default function LanPage() {
   const [preset, setPreset]     = useState<RulePreset>(ALL_PRESETS[0]);
   const [playerName, setPlayerName] = useState('');
   const [copied, setCopied]     = useState(false);
+  const hostConfigRef = useRef<Parameters<typeof startGame>[0] | null>(null);
 
   // Reset stale connection state on mount
   useEffect(() => { mp.disconnect(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -43,6 +44,7 @@ export default function LanPage() {
   // Host: when peer connects → go to game
   useEffect(() => {
     if (mp.status === 'connected' && (step === 'host-waiting' || step === 'connecting')) {
+      if (hostConfigRef.current) startGame(hostConfigRef.current);
       router.push('/game/super');
     }
     // Only show error if we actually started something (not on initial load with stale state)
@@ -63,6 +65,7 @@ export default function LanPage() {
           { player: 'O' as const, displayName: 'Guest', controlType: 'remote' as const },
         ] as [PlayerConfig, PlayerConfig],
       };
+      hostConfigRef.current = config;
       const roomCode = await mp.createSocketRoom(config);
       setCode(roomCode);
       setStep('host-waiting');
