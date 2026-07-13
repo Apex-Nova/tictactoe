@@ -2,7 +2,7 @@
 
 import { io, type Socket } from 'socket.io-client';
 
-const SERVER_URL = process.env.NEXT_PUBLIC_SOCKET_URL ?? 'https://tictactoe-server.onrender.com';
+const SERVER_URL = process.env.NEXT_PUBLIC_SOCKET_URL ?? 'https://tictactoe-zwih.onrender.com';
 
 export type GameMove = Record<string, unknown>;
 
@@ -26,7 +26,7 @@ export class SocketMultiplayer {
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
-      timeout: 15_000,
+      timeout: 45_000,
       transports: ['websocket', 'polling'],
     });
 

@@ -26,6 +26,9 @@ export default function LanPage() {
   const [playerName, setPlayerName] = useState('');
   const [copied, setCopied]     = useState(false);
 
+  // Reset stale connection state on mount
+  useEffect(() => { mp.disconnect(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Detect local IP from server API (only works on dev server)
   useEffect(() => {
     fetch('/api/local-ip')

@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMultiplayer } from '@/contexts/MultiplayerContext';
 import { useGame } from '@/contexts/GameContext';
 import { QRCodeDisplay } from '@/components/multiplayer/QRCodeDisplay';
-import { isSupabaseConfigured, testSupabaseConnection } from '@/services/signaling/SupabaseSignaling';
 import { ALL_PRESETS } from '@/game-engine/rules/presets';
 import type { RulePreset, PlayerConfig } from '@/types';
 
@@ -26,17 +25,10 @@ export default function OnlinePage() {
   const [preset, setPreset]   = useState<RulePreset>(ALL_PRESETS[0]);
   const [playerName, setPlayerName] = useState('');
   const [copied, setCopied]   = useState(false);
-  const [connError, setConnError] = useState<string | null>(null);
-  const [connChecked, setConnChecked] = useState(false);
 
-  const supabaseReady = isSupabaseConfigured();
+  // Reset stale connection state on mount
+  useEffect(() => { mp.disconnect(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    testSupabaseConnection().then(err => {
-      setConnError(err);
-      setConnChecked(true);
-    });
-  }, []);
   const joinUrl = `${BASE_URL}/join?code=${code}`;
 
   // When peer connects (host side) → go to game
@@ -103,35 +95,15 @@ export default function OnlinePage() {
           <p className="text-xs text-[var(--color-text-muted)] mt-1">Join from anywhere in the world</p>
         </div>
 
-        {connChecked && connError && (
-          <div className="px-4 py-3 rounded-xl border border-[var(--color-error)]/30 bg-[var(--color-error)]/10
-            text-[var(--color-error)] text-xs leading-relaxed">
-            <div className="font-bold mb-1">⚠ Connection failed</div>
-            <div className="opacity-80 break-words">{connError}</div>
-            {connError.includes('paused') && (
-              <div className="mt-2 opacity-70">Go to supabase.com → your project → click <b>Resume</b></div>
-            )}
-            {connError.includes('Table error') && (
-              <div className="mt-2 opacity-70">Run the setup SQL in Supabase → SQL Editor</div>
-            )}
-          </div>
-        )}
-        {!connChecked && supabaseReady && (
-          <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] justify-center">
-            <div className="w-3 h-3 rounded-full border-2 border-[var(--color-accent)] border-t-transparent animate-spin" />
-            Checking connection…
-          </div>
-        )}
-
         <AnimatePresence mode="wait">
 
           {step === 'choose-side' && (
             <motion.div key="choose" className="flex flex-col gap-3"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <SideBtn title="Create Room" desc="Get a code · share with your friend" icon="🏠"
-                disabled={!supabaseReady} accent="var(--color-o-primary)" onClick={() => setStep('host-setup')} />
+                accent="var(--color-o-primary)" onClick={() => setStep('host-setup')} />
               <SideBtn title="Join Room" desc="Enter the code your friend sent you" icon="🔑"
-                disabled={!supabaseReady} accent="var(--color-o-primary)" onClick={() => setStep('join-input')} />
+                accent="var(--color-o-primary)" onClick={() => setStep('join-input')} />
             </motion.div>
           )}
 
@@ -269,14 +241,13 @@ export default function OnlinePage() {
   );
 }
 
-function SideBtn({ title, desc, icon, onClick, disabled, accent }:
-  { title: string; desc: string; icon: string; onClick: () => void; disabled?: boolean; accent: string }) {
+function SideBtn({ title, desc, icon, onClick, accent }:
+  { title: string; desc: string; icon: string; onClick: () => void; accent: string }) {
   return (
-    <motion.button onClick={onClick} disabled={disabled} whileTap={!disabled ? { scale: 0.97 } : undefined}
+    <motion.button onClick={onClick} whileTap={{ scale: 0.97 }}
       className="flex items-center gap-4 px-5 py-4 rounded-2xl border transition-all text-left w-full
-        disabled:opacity-40 disabled:cursor-not-allowed
         bg-[var(--color-surface-1)] border-[var(--color-surface-3)]"
-      whileHover={!disabled ? { borderColor: accent } : undefined}>
+      whileHover={{ borderColor: accent }}>
       <span className="text-3xl">{icon}</span>
       <div>
         <div className="font-bold text-[var(--color-text-primary)]">{title}</div>
